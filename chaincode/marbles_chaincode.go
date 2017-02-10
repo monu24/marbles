@@ -1,21 +1,3 @@
-/*
-Licensed to the Apache Software Foundation (ASF) under one
-or more contributor license agreements.  See the NOTICE file
-distributed with this work for additional information
-regarding copyright ownership.  The ASF licenses this file
-to you under the Apache License, Version 2.0 (the
-"License"); you may not use this file except in compliance
-with the License.  You may obtain a copy of the License at
-
-  http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing,
-software distributed under the License is distributed on an
-"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-KIND, either express or implied.  See the License for the
-specific language governing permissions and limitations
-under the License.
-*/
 
 package main
 
@@ -24,41 +6,23 @@ import (
 	"fmt"
 	"strconv"
 	"encoding/json"
-	"time"
-	"strings"
-
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 )
 
-// SimpleChaincode example simple Chaincode implementation
-type SimpleChaincode struct {
+
+type Milkcontainer struct{
+	ID string `json:"ID"`					//Supplier
+	Owner string `json:"Owner"`
+	Status string `json:"status"`
+	
 }
 
-var marbleIndexStr = "_marbleindex"				//name for the key/value that will store a list of all known marbles
-var openTradesStr = "_opentrades"				//name for the key/value that will store all open trades
-
-type Marble struct{
-	Name string `json:"name"`					//the fieldtags are needed to keep case from bouncing around
-	Color string `json:"color"`
-	Size int `json:"size"`
-	User string `json:"user"`
+type  Coin struct{
+	ID string `json:"ID"`					//coin for market and logistics
+	Owner string `json:"Owner"`
+	
 }
 
-type Description struct{
-	Color string `json:"color"`
-	Size int `json:"size"`
-}
-
-type AnOpenTrade struct{
-	User string `json:"user"`					//user who created the open trade order
-	Timestamp int64 `json:"timestamp"`			//utc timestamp of creation
-	Want Description  `json:"want"`				//description of desired marble
-	Willing []Description `json:"willing"`		//array of marbles willing to trade away
-}
-
-type AllTrades struct{
-	OpenTrades []AnOpenTrade `json:"open_trades"`
-}
 
 // ============================================================================================================================
 // Main
@@ -74,49 +38,21 @@ func main() {
 // Init - reset all the things
 // ============================================================================================================================
 func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	var Aval int
-	var err error
-
 	if len(args) != 1 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 1")
 	}
 
-	// Initialize the chaincode
-	Aval, err = strconv.Atoi(args[0])
+	err := stub.PutState("hello_world", []byte(args[0]))
 	if err != nil {
-		return nil, errors.New("Expecting integer value for asset holding")
+		return nil, err
 	}
 
-	// Write the state to the ledger
-	err = stub.PutState("abc", []byte(strconv.Itoa(Aval)))				//making a test var "abc", I find it handy to read/write to it right away to test the network
-	if err != nil {
-		return nil, err
-	}
-	
-	var empty []string
-	jsonAsBytes, _ := json.Marshal(empty)								//marshal an emtpy array of strings to clear the index
-	err = stub.PutState(marbleIndexStr, jsonAsBytes)
-	if err != nil {
-		return nil, err
-	}
-	
-	var trades AllTrades
-	jsonAsBytes, _ = json.Marshal(trades)								//clear the open trade struct
-	err = stub.PutState(openTradesStr, jsonAsBytes)
-	if err != nil {
-		return nil, err
-	}
-	
-	return nil, nil
+return nil, nil
+
 }
 
-// ============================================================================================================================
-// Run - Our entry point for Invocations - [LEGACY] obc-peer 4/25/2016
-// ============================================================================================================================
-func (t *SimpleChaincode) Run(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	fmt.Println("run is running " + function)
-	return t.Invoke(stub, function, args)
-}
+
+
 
 // ============================================================================================================================
 // Invoke - Our entry point for Invocations
@@ -127,31 +63,80 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 	// Handle different functions
 	if function == "init" {													//initialize the chaincode state, used as reset
 		return t.Init(stub, "init", args)
-	} else if function == "delete" {										//deletes an entity from its state
-		res, err := t.Delete(stub, args)
-		cleanTrades(stub)													//lets make sure all open trades are still valid
-		return res, err
-	} else if function == "write" {											//writes a value to the chaincode state
-		return t.Write(stub, args)
-	} else if function == "init_marble" {									//create a new marble
-		return t.init_marble(stub, args)
-	} else if function == "set_user" {										//change owner of a marble
-		res, err := t.set_user(stub, args)
-		cleanTrades(stub)													//lets make sure all open trades are still valid
-		return res, err
-	} else if function == "open_trade" {									//create a new trade order
-		return t.open_trade(stub, args)
-	} else if function == "perform_trade" {									//forfill an open trade order
-		res, err := t.perform_trade(stub, args)
-		cleanTrades(stub)													//lets clean just in case
-		return res, err
-	} else if function == "remove_trade" {									//cancel an open trade order
-		return t.remove_trade(stub, args)
-	}
-	fmt.Println("invoke did not find func: " + function)					//error
-
-	return nil, errors.New("Received unknown function invocation")
+	} else if function == "Create_milkcontainer" {										//deletes an entity from its state
+		return t.Create_milkcontainer(stub, args)									//lets make sure all open trades are still valid
+	}else if function == "Create_coinmarket" {										//deletes an entity from its state
+		return t.Create_coinmarket(stub, args)									//lets make sure all open trades are still valid
+	}else if function == "Create_coinlogistics" {										//deletes an entity from its state
+		return t.Create_coinlogistics(stub, args)									//lets make sure all open trades are still valid
+	}	
+	return nil,nil
 }
+
+func (t *SimpleChaincode) Create_milkcontainer(stub shim.ChaincodeStubInterface ,function string, args []string) ([]byte, error) {
+
+
+			M1:=Milkcontainer{}
+			M1.ID = "123"
+			M1.Owner="Supplier"
+                       
+                        supplierassetinbytes, _ := json.Marshal(M1)           // Convering to Json format i.e bytes
+                        stub.PutState("Supplierassets", supplierassetinbytes) // Writing to ledger with the shown key and entire struct as value
+   
+                          
+                    
+
+                        fmt.Println(string(supplierassetinbytes))                 // Printing the Contents
+
+    return nil, nil                    
+   
+}
+
+
+func (t *SimpleChaincode) Create_coinmarket(stub shim.ChaincodeStubInterface ,function string, args []string) ([]byte, error) {
+
+
+			A1:=Coin{}
+			A1.ID = "456"
+			A1.Owner="Market"
+                       
+                        marketassetinbytes, _ := json.Marshal(A1)           // Convering to Json format i.e bytes
+                        stub.PutState("Marketassets", marketassetinbytes) // Writing to ledger with the shown key and entire struct as value
+   
+                          
+                    
+
+                        fmt.Println(string(marketassetinbytes))     
+ return nil, nil			
+                        
+}
+
+
+
+func (t *SimpleChaincode) Create_coinlogistics(stub shim.ChaincodeStubInterface ,function string, args []string) ([]byte, error) {
+                      
+                     	L1:=Coin{}
+			L1.ID = "789"
+			L1.Owner="Logistics"
+                       
+                        logisticsassetinbytes, _ := json.Marshal(L1)           // Convering to Json format i.e bytes
+                        stub.PutState("Marketassets", logisticsassetinbytes) // Writing to ledger with the shown key and entire struct as value
+   
+                          
+                    
+
+                        fmt.Println(string(logisticsassetinbytes))     
+
+     return nil, nil
+
+
+}
+
+
+
+
+
+
 
 // ============================================================================================================================
 // Query - Our entry point for Queries
@@ -172,9 +157,7 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 // Read - read a variable from chaincode state
 // ============================================================================================================================
 func (t *SimpleChaincode) read(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	var name, jsonResp string
-	var err error
-
+	
 	if len(args) != 1 {
 		return nil, errors.New("Incorrect number of arguments. Expecting name of the var to query")
 	}
@@ -192,6 +175,7 @@ func (t *SimpleChaincode) read(stub shim.ChaincodeStubInterface, args []string) 
 // ============================================================================================================================
 // Delete - remove a key/value pair from state
 // ============================================================================================================================
+/*
 func (t *SimpleChaincode) Delete(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	if len(args) != 1 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 1")
@@ -651,3 +635,4 @@ func cleanTrades(stub shim.ChaincodeStubInterface)(err error){
 	fmt.Println("- end clean trades")
 	return nil
 }
+*/
